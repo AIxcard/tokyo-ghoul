@@ -868,10 +868,28 @@
                 list.appendChild(img);
             });
 
-            window.scrollTo({ top: 0, behavior: 'instant' });
+            // Ensure reader container and window reliably scroll to absolute top
+            const readerElem = document.querySelector('.reader-view') || document.getElementById('readerView');
+            if (readerElem) {
+                readerElem.scrollTop = 0;
+                try { readerElem.scrollTo({ top: 0, left: 0, behavior: 'instant' }); } catch(e) {}
+            }
+            window.scrollTo(0, 0);
+            try { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); } catch(e) {}
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            requestAnimationFrame(() => {
+                if (readerElem) readerElem.scrollTop = 0;
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            });
         }
 
         function navigateChapter(delta) {
+            const readerElem = document.querySelector('.reader-view') || document.getElementById('readerView');
+            if (readerElem) readerElem.scrollTop = 0;
+            window.scrollTo(0, 0);
             openChapter(currentChapterIndex + delta);
         }
 
