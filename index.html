@@ -789,11 +789,14 @@
                 updateLatestButton();
                 updateProgressUI();
 
-                // Check URL hash for section or chapter
-                const hash = window.location.hash;
-                if (hash === '#re' || hash === '#part2') {
+                // Check URL query and hash for section
+                const urlParams = new URLSearchParams(window.location.search);
+                const secParam = urlParams.get('section');
+                const hash = window.location.hash ? window.location.hash.toLowerCase() : '';
+                
+                if (secParam === 're' || secParam === 'part2' || hash === '#re' || hash === '#part2' || hash.includes('re')) {
                     switchSection('part2');
-                } else if (hash === '#part1') {
+                } else if (secParam === 'part1' || hash === '#part1') {
                     switchSection('part1');
                 } else {
                     switchSection('all');
@@ -811,6 +814,11 @@
 
         function switchSection(section) {
             currentSection = section;
+            try {
+                if (section === 'part2') history.replaceState(null, '', '#re');
+                else if (section === 'part1') history.replaceState(null, '', '#part1');
+                else history.replaceState(null, '', window.location.pathname + window.location.search);
+            } catch (e) {}
             document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
             const banner = document.getElementById('sectionBannerInfo');
             const titleElem = document.getElementById('chaptersSectionTitle');
