@@ -325,13 +325,14 @@
         }
 
         .section-tabs {
-            display: flex;
-            gap: 10px;
-            background: rgba(16, 18, 26, 0.8);
+            display: inline-flex;
+            gap: 6px;
+            background: rgba(16, 18, 26, 0.85);
             padding: 6px;
             border-radius: 14px;
             border: 1px solid var(--border);
             flex-wrap: wrap;
+            max-width: 100%;
         }
 
         .section-tab {
@@ -1041,11 +1042,6 @@
 
             markChapterRead(ch.number);
 
-            // Always scroll reader and window to top of chapter
-            const readerElem = document.getElementById('readerView');
-            if (readerElem) readerElem.scrollTop = 0;
-            window.scrollTo({ top: 0, behavior: 'instant' });
-
             document.body.classList.add('reading-active');
             document.getElementById('chapterSelect').value = index;
             document.getElementById('readerTitle').textContent = ch.title;
@@ -1059,7 +1055,7 @@
             const list = document.getElementById('pagesList');
             list.innerHTML = `
                 <div class="chapter-title-card">
-                    <span class="chapter-title-badge">Tokyo Ghoul</span>
+                    <span class="chapter-title-badge">${ch.title.includes(':re') ? 'Tokyo Ghoul:re' : 'Tokyo Ghoul'}</span>
                     <h2 class="chapter-title-name">${ch.title}</h2>
                     <div class="chapter-title-meta">${ch.pageCount} Pages</div>
                 </div>
@@ -1080,21 +1076,15 @@
                 list.appendChild(img);
             });
 
-            // Ensure reader container and window reliably scroll to absolute top
-            const readerElem = document.querySelector('.reader-view') || document.getElementById('readerView');
-            if (readerElem) {
-                readerElem.scrollTop = 0;
-                try { readerElem.scrollTo({ top: 0, left: 0, behavior: 'instant' }); } catch(e) {}
-            }
-            window.scrollTo(0, 0);
-            try { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); } catch(e) {}
+            // Guaranteed scroll to absolute top of chapter
+            const reader = document.getElementById('readerView');
+            if (reader) reader.scrollTop = 0;
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             document.documentElement.scrollTop = 0;
             document.body.scrollTop = 0;
             requestAnimationFrame(() => {
-                if (readerElem) readerElem.scrollTop = 0;
+                if (reader) reader.scrollTop = 0;
                 window.scrollTo(0, 0);
-                document.documentElement.scrollTop = 0;
-                document.body.scrollTop = 0;
             });
         }
 
