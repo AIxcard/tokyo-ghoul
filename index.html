@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Tokyo Ghoul — KURO MANGA</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236366f1'/%3E%3Cpath d='M20 16L32 28L44 16V48L32 36L20 48Z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -313,6 +316,86 @@
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.1);
+        }
+
+        
+        /* Section Tabs & Switcher */
+        .section-tabs-container {
+            margin-bottom: 24px;
+        }
+
+        .section-tabs {
+            display: flex;
+            gap: 10px;
+            background: rgba(16, 18, 26, 0.8);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .section-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #94a3b8;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-tab:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .section-tab.active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        }
+
+        .tab-icon {
+            font-size: 1rem;
+        }
+
+        .tab-count {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .section-tab.active .tab-count {
+            background: rgba(255, 255, 255, 0.22);
+            color: #fff;
+        }
+
+        .section-banner-info {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(16, 18, 26, 0.6));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .section-banner-title {
+            font-weight: 800;
+            color: #fff;
+            display: block;
+            margin-bottom: 2px;
         }
 
         /* Chapters Section */
@@ -629,8 +712,30 @@
 
     <!-- Chapters Section -->
     <main class="chapters-wrap">
+        <div class="section-tabs-container">
+            <div class="section-tabs">
+                <button class="section-tab active" id="tabAll" onclick="switchSection('all')">
+                    <span class="tab-icon">📚</span>
+                    <span class="tab-label">All Chapters</span>
+                    <span class="tab-count" id="countAll">325</span>
+                </button>
+                <button class="section-tab" id="tabPart1" onclick="switchSection('part1')">
+                    <span class="tab-icon">📖</span>
+                    <span class="tab-label">Part 1: Tokyo Ghoul</span>
+                    <span class="tab-count" id="countPart1">144</span>
+                </button>
+                <button class="section-tab" id="tabPart2" onclick="switchSection('part2')">
+                    <span class="tab-icon">⚡</span>
+                    <span class="tab-label">Part 2: Tokyo Ghoul:re</span>
+                    <span class="tab-count" id="countPart2">181</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="sectionBannerInfo" class="section-banner-info" style="display:none;"></div>
+
         <div class="chapters-header">
-            <h2 class="chapters-title">All Chapters</h2>
+            <h2 class="chapters-title" id="chaptersSectionTitle">All Chapters</h2>
             <input type="text" class="search-box" id="chapterSearch" placeholder="Filter chapter number..." oninput="filterChapters(this.value)">
         </div>
         <div class="chapter-grid" id="chapterGrid">
@@ -665,17 +770,35 @@
     <script>
         let manifest = null;
         let currentChapterIndex = 0;
+        let currentSection = 'all'; // 'all', 'part1', 'part2'
 
         async function init() {
             try {
-                const res = await fetch('manifest.json');
+                const res = await fetch('manifest.json?v=' + Date.now());
                 manifest = await res.json();
-                renderChapterGrid(manifest.chapters);
+                
+                // Update tab counts
+                const p1Chapters = manifest.chapters.filter(c => !c.title.includes(':re'));
+                const p2Chapters = manifest.chapters.filter(c => c.title.includes(':re'));
+                
+                document.getElementById('countAll').textContent = manifest.chapters.length;
+                document.getElementById('countPart1').textContent = p1Chapters.length;
+                document.getElementById('countPart2').textContent = p2Chapters.length;
+
                 populateDropdown(manifest.chapters);
                 updateLatestButton();
                 updateProgressUI();
 
+                // Check URL hash for section or chapter
                 const hash = window.location.hash;
+                if (hash === '#re' || hash === '#part2') {
+                    switchSection('part2');
+                } else if (hash === '#part1') {
+                    switchSection('part1');
+                } else {
+                    switchSection('all');
+                }
+
                 if (hash && hash.startsWith('#ch-')) {
                     const chNum = parseFloat(hash.replace('#ch-', ''));
                     const foundIdx = manifest.chapters.findIndex(c => c.number === chNum);
@@ -684,6 +807,63 @@
             } catch (err) {
                 console.error('Failed to load manifest:', err);
             }
+        }
+
+        function switchSection(section) {
+            currentSection = section;
+            document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
+            const banner = document.getElementById('sectionBannerInfo');
+            const titleElem = document.getElementById('chaptersSectionTitle');
+            const searchInput = document.getElementById('chapterSearch');
+            if (searchInput) searchInput.value = '';
+
+            const heroCover = document.querySelector('.hero-cover');
+
+            if (section === 'part1') {
+                document.getElementById('tabPart1').classList.add('active');
+                titleElem.textContent = 'Part 1: Tokyo Ghoul (Chapters 1 - 143)';
+                banner.style.display = 'flex';
+                banner.innerHTML = `
+                    <div>
+                        <span class="section-banner-title">📖 Part 1: Tokyo Ghoul (144 Chapters)</span>
+                        <span>The original masterpiece story of Ken Kaneki surviving as a half-ghoul in Tokyo. Complete Chapters 1 to 143 + Epilogue.</span>
+                    </div>
+                `;
+                if (heroCover) heroCover.src = 'https://raw.githubusercontent.com/AIxcard/tokyo-ghoul/main/cover.jpg';
+            } else if (section === 'part2') {
+                document.getElementById('tabPart2').classList.add('active');
+                titleElem.textContent = 'Part 2: Tokyo Ghoul:re (Chapters 1 - 179)';
+                banner.style.display = 'flex';
+                banner.innerHTML = `
+                    <div>
+                        <span class="section-banner-title">⚡ Part 2: Tokyo Ghoul:re (181 Chapters)</span>
+                        <span>The official sequel! Follow Haise Sasaki and the Quinx Squad of the CCG. Complete Chapters 1 to 179 + Extras.</span>
+                    </div>
+                `;
+                if (heroCover) heroCover.src = 'https://raw.githubusercontent.com/AIxcard/tokyo-ghoul/main/cover_re.jpg';
+            } else {
+                document.getElementById('tabAll').classList.add('active');
+                titleElem.textContent = 'All Chapters (325 Total Chapters)';
+                banner.style.display = 'none';
+                if (heroCover) heroCover.src = 'https://raw.githubusercontent.com/AIxcard/tokyo-ghoul/main/cover.jpg';
+            }
+
+            renderFilteredChapters();
+        }
+
+        function getChaptersForCurrentSection() {
+            if (!manifest || !manifest.chapters) return [];
+            if (currentSection === 'part1') {
+                return manifest.chapters.filter(c => !c.title.includes(':re'));
+            } else if (currentSection === 'part2') {
+                return manifest.chapters.filter(c => c.title.includes(':re'));
+            }
+            return manifest.chapters;
+        }
+
+        function renderFilteredChapters() {
+            const list = getChaptersForCurrentSection();
+            renderChapterGrid(list);
         }
 
         function getStorageKey() {
@@ -810,18 +990,37 @@
         function populateDropdown(chapters) {
             const sel = document.getElementById('chapterSelect');
             sel.innerHTML = '';
+            
+            const groupPart1 = document.createElement('optgroup');
+            groupPart1.label = 'Part 1: Tokyo Ghoul (Chapters 1 - 143)';
+            
+            const groupPart2 = document.createElement('optgroup');
+            groupPart2.label = 'Part 2: Tokyo Ghoul:re (Chapters 1 - 179)';
+
             chapters.forEach((ch, idx) => {
                 const opt = document.createElement('option');
                 opt.value = idx;
                 opt.textContent = ch.title;
-                sel.appendChild(opt);
+                if (ch.title.includes(':re')) {
+                    groupPart2.appendChild(opt);
+                } else {
+                    groupPart1.appendChild(opt);
+                }
             });
+
+            sel.appendChild(groupPart1);
+            sel.appendChild(groupPart2);
         }
 
         function filterChapters(query) {
             if (!manifest) return;
             const q = query.trim().toLowerCase();
-            const filtered = manifest.chapters.filter(ch => 
+            const sectionList = getChaptersForCurrentSection();
+            if (!q) {
+                renderChapterGrid(sectionList);
+                return;
+            }
+            const filtered = sectionList.filter(ch => 
                 ch.title.toLowerCase().includes(q) || String(ch.number).includes(q)
             );
             renderChapterGrid(filtered);
@@ -833,6 +1032,11 @@
             const ch = manifest.chapters[index];
 
             markChapterRead(ch.number);
+
+            // Always scroll reader and window to top of chapter
+            const readerElem = document.getElementById('readerView');
+            if (readerElem) readerElem.scrollTop = 0;
+            window.scrollTo({ top: 0, behavior: 'instant' });
 
             document.body.classList.add('reading-active');
             document.getElementById('chapterSelect').value = index;
